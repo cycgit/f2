@@ -1,8 +1,6 @@
 const Util = require('../../util/common');
-const DOMUtil = require('../../util/dom');
 const Shape = require('../shape');
 
-let dummyContext;
 let textWidthCacheCounter = 0;
 let textWidthCache = {};
 const TEXT_CACHE_MAX = 5000;
@@ -82,8 +80,16 @@ class Text extends Shape {
     const textArr = attrs.textArr;
     const fontSize = attrs.fontSize * 1;
     const spaceingY = self._getSpaceingY();
-    const x = attrs.x;
-    const y = attrs.y;
+    let x = attrs.x;
+    let y = attrs.y;
+
+    if (attrs.rotate) { // 文本旋转
+      context.translate(x, y);
+      context.rotate(attrs.rotate);
+      x = 0;
+      y = 0;
+    }
+
     const textBaseline = attrs.textBaseline;
     let height;
     if (textArr) {
@@ -177,17 +183,10 @@ class Text extends Shape {
     };
   }
 
-  _getDummyContext() {
-    if (dummyContext) {
-      return dummyContext;
-    }
-    dummyContext = DOMUtil.createCanvas().getContext('2d');
-    return dummyContext;
-  }
-
   _getTextWidth() {
     const attrs = this._attrs.attrs;
     const text = attrs.text;
+    const context = this.get('context');
 
     if (Util.isNil(text)) return undefined;
 
@@ -199,15 +198,13 @@ class Text extends Shape {
     }
 
     let width = 0;
-    const context = this._getDummyContext();
-    context.font = font;
     if (textArr) {
       for (let i = 0, length = textArr.length; i < length; i++) {
         const subText = textArr[i];
-        width = Math.max(width, context.measureText(subText).width);
+        width = Math.max(width, Util.measureText(subText, font, context).width);
       }
     } else {
-      width = context.measureText(text).width;
+      width = Util.measureText(text, font, context).width;
     }
 
     if (textWidthCacheCounter > TEXT_CACHE_MAX) {

@@ -1,5 +1,4 @@
 const Util = require('../util/common');
-const DomUtil = require('../util/dom');
 const List = require('../component/list');
 const Global = require('../global');
 const LEGEND_GAP = 12;
@@ -241,8 +240,8 @@ class LegendController {
     const self = this;
     const { tl, bl } = self.plotRange;
     const chart = self.chart;
-    const offsetX = legend.offsetX || 0;
-    const offsetY = legend.offsetY || 0;
+    let offsetX = legend.offsetX || 0;
+    let offsetY = legend.offsetY || 0;
     const chartWidth = chart.get('width');
     const chartHeight = chart.get('height');
     const appendPadding = chart.get('appendPadding');
@@ -279,6 +278,12 @@ class LegendController {
         const preWidth = pre.getWidth();
         x = pre.x + preWidth + LEGEND_GAP;
       }
+    }
+    if (position === 'bottom' && offsetY > 0) {
+      offsetY = 0;
+    }
+    if (position === 'right' && offsetX > 0) {
+      offsetX = 0;
     }
     legend.moveTo(x + offsetX, y + offsetY);
   }
@@ -325,7 +330,7 @@ class LegendController {
     }
 
     const chart = self.chart;
-    const { x, y } = DomUtil.createEvent(ev, chart);
+    const { x, y } = Util.createEvent(ev, chart);
     const clicked = findItem(x, y);
     if (clicked && clicked.clickedLegend.clickable !== false) {
       const { clickedItem, clickedLegend } = clicked;
@@ -357,7 +362,7 @@ class LegendController {
     if (Util.isFunction(triggerOn)) {
       triggerOn(method, 'bind');
     } else {
-      DomUtil.addEventListener(this.canvasDom, triggerOn, method);
+      Util.addEventListener(this.canvasDom, triggerOn, method);
     }
   }
 
@@ -368,7 +373,7 @@ class LegendController {
     if (Util.isFunction(triggerOn)) {
       triggerOn(method, 'unBind');
     } else {
-      DomUtil.removeEventListener(this.canvasDom, triggerOn, method);
+      Util.removeEventListener(this.canvasDom, triggerOn, method);
     }
   }
 }
@@ -458,8 +463,14 @@ module.exports = {
         const height = legend.getHeight();
         if (position === 'top' || position === 'bottom') {
           padding = Math.max(padding, height);
+          if (legend.offsetY > 0) {
+            padding += legend.offsetY;
+          }
         } else {
           padding = Math.max(padding, width);
+          if (legend.offsetX > 0) {
+            padding += legend.offsetX;
+          }
         }
       });
       legendRange[position] = padding + appendPadding;

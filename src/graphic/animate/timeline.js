@@ -1,5 +1,5 @@
 const requestAnimationFrame = typeof window === 'object' && window.requestAnimationFrame ? window.requestAnimationFrame : function(fn) {
-  return setInterval(fn, 16);
+  return setTimeout(fn, 16);
 };
 // const cancelAnimationFrame = typeof window === 'object' && window.cancelAnimationFrame ? window.cancelAnimationFrame : function(id) {
 //   return clearInterval(id);
@@ -9,31 +9,31 @@ const clock = typeof performance === 'object' && performance.now ? performance :
 
 class Timeline {
   constructor() {
+    this.anims = [];
+    this.time = null;
+    this.playing = false;
+    this.canvas = [];
+  }
+
+  play() {
     const self = this;
-    self.name = 'Global';
-    self.anims = [];
     self.time = clock.now();
     self.playing = true;
-    self.canvas = [];
-    function animate() {
-      self.loopInterval = requestAnimationFrame(animate);
-      self.playing && self.update();
+
+    function step() {
+      if (self.playing) {
+        requestAnimationFrame(step);
+        self.update();
+      }
     }
-    animate();
+
+    requestAnimationFrame(step);
   }
 
   stop() {
     this.playing = false;
-    this.time = clock.now();
+    this.time = null;
     this.canvas = [];
-  }
-
-  pause() {
-    this.playing = false;
-  }
-
-  play() {
-    this.playing = true;
   }
 
   update() {
@@ -62,23 +62,28 @@ class Timeline {
       let t = (currentTime - propertyAnim.startTime) / duration;
       t = Math.max(0, Math.min(t, 1));
       t = propertyAnim.easing(t);
-      for (const key in interpolate) {
-        const diff = interpolate[key];
-        const value = diff(t);
-        let newValue;
-        if (key === 'points') {
-          newValue = [];
-          const aLen = Math.max(startState.points.length, endState.points.length);
-          for (let j = 0; j < aLen; j += 2) {
-            newValue.push({
-              x: value[j],
-              y: value[j + 1]
-            });
+
+      if (propertyAnim.onFrame) {
+        propertyAnim.onFrame(t);
+      } else {
+        for (const key in interpolate) {
+          const diff = interpolate[key];
+          const value = diff(t);
+          let newValue;
+          if (key === 'points') {
+            newValue = [];
+            const aLen = Math.max(startState.points.length, endState.points.length);
+            for (let j = 0; j < aLen; j += 2) {
+              newValue.push({
+                x: value[j],
+                y: value[j + 1]
+              });
+            }
+          } else {
+            newValue = value;
           }
-        } else {
-          newValue = value;
+          shape._attrs.attrs[key] = newValue;
         }
-        shape._attrs.attrs[key] = newValue;
       }
 
       const canvas = shape.get('canvas');
@@ -103,21 +108,19 @@ class Timeline {
       }
     }
 
-    if (this.anims.length) {
-      this.canvas.map(c => {
-        c.draw();
-        return c;
-      });
-    }
+    this.canvas.map(c => {
+      c.draw();
+      return c;
+    });
     this.time = clock.now();
   }
 }
 
-Timeline.getGlobalInstance = function() {
-  if (!Timeline.globalInstance) {
-    Timeline.globalInstance = new Timeline();
-  }
-  return Timeline.globalInstance;
-};
+// Timeline.getGlobalInstance = function() {
+//   if (!Timeline.globalInstance) {
+//     Timeline.globalInstance = new Timeline();
+//   }
+//   return Timeline.globalInstance;
+// };
 
 module.exports = Timeline;

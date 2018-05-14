@@ -174,7 +174,8 @@ class AxisController {
           }, labelCfg),
           value: tick.value,
           textStyle,
-          top: labelCfg.top
+          top: labelCfg.top,
+          context: self.chart.get('canvas').get('context')
         });
         labels.push(axisLabel);
         const { width, height } = axisLabel.getBBox();
@@ -297,26 +298,30 @@ class AxisController {
         const gridPoints = [];
         const verticalTicks = formatTicks(verticalScale.getTicks());
 
-        Util.each(ticks, function(tick) {
+        Util.each(ticks, tick => {
           const subPoints = [];
-          Util.each(verticalTicks, function(verticalTick) {
+          Util.each(verticalTicks, verticalTick => {
             const x = dimType === 'x' ? tick.value : verticalTick.value;
             const y = dimType === 'x' ? verticalTick.value : tick.value;
             const point = coord.convertPoint({
               x,
               y
             });
-            subPoints.push({
-              x: point.x,
-              y: point.y
-            });
+            subPoints.push(point);
           });
+
           gridPoints.push({
             points: subPoints,
             _id: 'axis-' + dimType + index + '-grid-' + tick.tickValue
           });
         });
         axis.gridPoints = gridPoints;
+
+        if (coord.isPolar && grid.type === 'arc') {
+          axis.center = coord.center;
+          axis.startAngle = coord.startAngle;
+          axis.endAngle = coord.endAngle;
+        }
       }
       appendCfg._id = 'axis-' + dimType;
       if (!Util.isNil(index)) {

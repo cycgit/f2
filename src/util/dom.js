@@ -1,6 +1,4 @@
-/**
- * TODO: 这个会抽离至 platfrom，在 html5 环境下使用这个
- */
+
 let DomUtil;
 /**
  * Detects support for options object argument in addEventListener.
@@ -49,26 +47,16 @@ function fromNativeEvent(event, chart) { // TODO: chart 改成 dom
     point.y = event.clientY;
   }
   const canvas = chart.get('canvas');
-  // const canvasEl = canvas.get('el');
   const pos = DomUtil.getRelativePosition(point, canvas);
   return createEvent(type, chart, pos.x, pos.y, event);
 }
 
 DomUtil = {
-  modifyCSS(DOM, CSS) {
-    for (const key in CSS) {
-      if (CSS.hasOwnProperty(key)) {
-        DOM.style[key] = CSS[key];
-      }
-    }
-    return DOM;
-  },
-  createDom(str) {
-    const container = document.createElement('div');
-    str = str.replace(/(^\s*)|(\s*$)/g, '');
-    container.innerHTML = '' + str;
-    return container.childNodes[0];
-  },
+  /* global wx, my, module */
+  isWx: (typeof wx === 'object') && (typeof wx.getSystemInfoSync === 'function'),  // weixin miniprogram
+  isMy: (typeof my === 'object') && (typeof my.getSystemInfoSync === 'function'), // ant miniprogram
+  isNode: (typeof module !== 'undefined') && (typeof module.exports !== 'undefined'), // in node
+  isBrowser: (typeof window !== 'undefined') && (typeof window.document !== 'undefined'), // in browser
   getPixelRatio() {
     return window && window.devicePixelRatio || 1;
   },
@@ -122,17 +110,22 @@ DomUtil = {
       y: mouseY
     };
   },
-  createCanvas() {
-    return document.createElement('canvas');
-  },
   addEventListener(source, type, listener) {
-    source.addEventListener(type, listener, eventListenerOptions);
+    DomUtil.isBrowser && source.addEventListener(type, listener, eventListenerOptions);
   },
   removeEventListener(source, type, listener) {
-    source.removeEventListener(type, listener, eventListenerOptions);
+    DomUtil.isBrowser && source.removeEventListener(type, listener, eventListenerOptions);
   },
   createEvent(event, chart) {
     return fromNativeEvent(event, chart);
+  },
+  measureText(text, font, ctx) {
+    if (!ctx) {
+      ctx = document.createElement('canvas').getContext('2d');
+    }
+
+    ctx.font = font || '12px sans-serif';
+    return ctx.measureText(text);
   }
 };
 
